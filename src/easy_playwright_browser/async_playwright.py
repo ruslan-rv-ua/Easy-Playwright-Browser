@@ -1,4 +1,5 @@
 from playwright.async_api import async_playwright
+from playwright.async_api._generated import BrowserContext
 
 from . import _EasyPlaywrightBase
 
@@ -10,7 +11,7 @@ class EasyPlaywright(_EasyPlaywrightBase):
         engine = getattr(self._playwright, self.browser_name)
         executable_path = self._find_executable()
         try:
-            self._browser = await engine.launch_persistent_context(
+            self.browser: BrowserContext = await engine.launch_persistent_context(
                 user_data_dir=self._browser_data_dir,
                 headless=self.headless,
                 executable_path=executable_path,
@@ -23,7 +24,7 @@ class EasyPlaywright(_EasyPlaywrightBase):
         self._check_before_stop()
         await self._playwright.stop()
         self._playwright = None
-        del self._browser
+        del self.browser
 
     async def __aenter__(self) -> "_EasyPlaywrightBase":
         await self.start()

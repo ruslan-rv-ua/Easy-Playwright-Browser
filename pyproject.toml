@@ -1,7 +1,7 @@
 [project]
-name = "easy-playwright-browser"
+name = "easy-playwright-python"
 version = "0.1.0"
-description = "Add your description here"
+description = "An easy-to-use solution for seamless browser automation with Playwright in Python."
 authors = [
     { name = "Ruslan Iskov", email = "ruslan.rv.ua@gmail.com" }
 ]

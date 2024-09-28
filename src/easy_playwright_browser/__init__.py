@@ -1,46 +1,44 @@
-from enum import StrEnum
 from pathlib import Path
 from subprocess import run
+from typing import Literal
 
 from playwright._impl._driver import (
     compute_driver_executable,  # type: ignore
     get_driver_env,
 )
 
-BROWSER_DATA_DEFAULT_DIR = "BROWSERS_DATA"
-BROWSER_DEFAULT_INSTALLATION_DIR = "INSTALLED_BROWSERS"
-
-
-class BrowserType(StrEnum):
-    CHROMIUM = "chromium"
-    FIREFOX = "firefox"
-    WEBKIT = "webkit"
+USER_DATA_DEFAULT_DIR = "USER_DATA"
+BROWSERS_INSTALL_DEFAULT_DIR = "INSTALLED_BROWSERS"
 
 
 class _EasyPlaywrightBase:
     def __init__(
         self,
-        browser_type: BrowserType = BrowserType.CHROMIUM,
+        browser_name: Literal["chromium", "firefox", "webkit"] = "chromium",
         headless: bool = True,
-        browser_data_dir: Path | str | None = None,
-        browser_installation_dir: Path | str | None = None,
+        user_data_dir: Path | str | None = None,
+        browsers_install_dir: Path | str | None = None,
+        install_browser: bool = True,
+        **kwargs,
     ) -> None:
-        self._browser_type = browser_type
-        self._browser_executable = self._get_browser_executable(browser_type)
-
+        self._browser_name = browser_name
         self._headless = headless
+        self._browser_executable = self._get_browser_executable_file_relative_path(
+            browser_name
+        )
 
         current_dir = Path(__file__).resolve().parent
-        self._browser_data_dir = (
-            Path(browser_data_dir)
-            if browser_data_dir is not None
-            else current_dir / BROWSER_DATA_DEFAULT_DIR / self.browser_name
-        )
-        self._browser_installation_dir = (
-            Path(browser_installation_dir)
-            if browser_installation_dir is not None
-            else current_dir / BROWSER_DEFAULT_INSTALLATION_DIR
-        )
+        if self._user_data_dir is not None:
+            self._user_data_dir = Path(self._user_data_dir)
+        else:
+            self._user_data_dir = current_dir / USER_DATA_DEFAULT_DIR / browser_name
+        if browsers_install_dir is not None:
+            browsers_install_dir = Path(browsers_install_dir)
+        else:
+            browsers_install_dir = current_dir / BROWSERS_INSTALL_DEFAULT_DIR
+        executable_path = self._find_executable()
+        if executable_path is None and install_browser:
+            self.install_browser()
 
         self._playwright = None
 
@@ -91,29 +89,21 @@ class _EasyPlaywrightBase:
     ######################################################################
 
     @staticmethod
-    def _get_browser_executable(browser_type):
-        match browser_type:
-            case BrowserType.CHROMIUM:
+    def _get_browser_executable_file_relative_path(browser_name):
+        match browser_name:
+            case "chromium":
                 return "chrome-win/chrome.exe"  # TODO: os specific
-            case BrowserType.FIREFOX:
+            case "firefox":
                 return "firefox/firefox.exe"
-            case BrowserType.WEBKIT:
+            case "webkit":
                 return "Playwright.exe"
             case _:
-                raise ValueError(f"Unknown browser type: {browser_type}")
-
-    @property
-    def browser_type(self) -> BrowserType:
-        return self._browser_type
+                raise ValueError(f"Unknown browser name: {browser_name}")
 
     @property
     def headless(self) -> bool:
         return self._headless
 
     @property
-    def browser(self):
-        return self._browser
-
-    @property
     def browser_name(self) -> str:
-        return self._browser_type.value
+        return self._browser_name
